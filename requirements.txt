@@ -1,0 +1,16 @@
+loguru
+mkdocs
+pip
+python-dotenv
+ruff
+tqdm
+typer
+pandas
+numpy<2
+scikit-surprise
+scikit-learn
+matplotlib
+seaborn
+jupyter
+joblib
+-e .

@@ -188,6 +188,62 @@ def _fallback_genre_popular(
     return result
 
 
+def ndcg_at_k(
+    predictions: list, k: int = 10, threshold: float = 4.0
+) -> float:
+    """Compute NDCG@K (Normalized Discounted Cumulative Gain) from Surprise predictions.
+
+    Unlike Precision@K, NDCG penalises relevant items that appear lower in the
+    ranking: a relevant hit at position 1 contributes more than one at position K.
+    A rating >= threshold is treated as relevant (gain = 1), otherwise gain = 0.
+    """
+    user_est_true: dict[str, list] = {}
+    for pred in predictions:
+        user_est_true.setdefault(pred.uid, []).append((pred.est, pred.r_ui))
+
+    scores = []
+    for uid, user_ratings in user_est_true.items():
+        user_ratings.sort(key=lambda x: x[0], reverse=True)
+        top_k = user_ratings[:k]
+
+        dcg = sum(
+            (1.0 if true_r >= threshold else 0.0) / np.log2(i + 2)
+            for i, (_, true_r) in enumerate(top_k)
+        )
+        ideal = sorted(
+            [1.0 if true_r >= threshold else 0.0 for _, true_r in user_ratings],
+            reverse=True,
+        )[:k]
+        idcg = sum(rel / np.log2(i + 2) for i, rel in enumerate(ideal))
+
+        scores.append(dcg / idcg if idcg > 0 else 0.0)
+
+    return float(np.mean(scores))
+
+
+def coverage_at_k(
+    predictions: list, all_item_ids: list, k: int = 10
+) -> float:
+    """Fraction of the item catalog that appears in at least one top-K list.
+
+    Uses the test-set predictions so no extra inference is needed.
+    Item IDs in Surprise predictions are strings; all_item_ids may be ints —
+    the comparison is done on string-cast IDs.
+    """
+    all_ids_str = {str(iid) for iid in all_item_ids}
+
+    user_preds: dict[str, list] = {}
+    for pred in predictions:
+        user_preds.setdefault(pred.uid, []).append((pred.est, str(pred.iid)))
+
+    recommended: set[str] = set()
+    for uid, preds in user_preds.items():
+        preds.sort(reverse=True)
+        recommended.update(iid for _, iid in preds[:k])
+
+    return len(recommended & all_ids_str) / len(all_ids_str)
+
+
 def precision_recall_at_k(
     predictions: list, k: int = 10, threshold: float = 4.0
 ) -> tuple[float, float]:

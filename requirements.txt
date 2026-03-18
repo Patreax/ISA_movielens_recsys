@@ -9,6 +9,7 @@ pandas
 numpy<2
 scikit-surprise
 scikit-learn
+optuna
 matplotlib
 seaborn
 jupyter

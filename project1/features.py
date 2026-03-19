@@ -11,8 +11,8 @@ def compute_genre_preference(
 ) -> pd.DataFrame:
     """Compute per-user genre preference vector from rated items.
 
-    For each user, calculates the mean rating given to movies of each genre.
-    Only considers genres the user has actually rated; fills NaN with 0.
+    For each user, we calculate the mean rating given to movies of each genre.
+    We only consider genres the user has actually rated and fill the NaN values with 0.
     """
     if items is None:
         items = load_items()
@@ -38,8 +38,8 @@ def build_user_features(
 ) -> tuple[pd.DataFrame, StandardScaler, dict]:
     """Build a combined user feature matrix (demographics + genre preference).
 
-    ML-1M demographics: age_code (categorical int), gender (M/F), occupation_code (int 0-20).
-    Returns (feature_df, scaler, encoders) where feature_df is indexed by user_id.
+    Demographics: age_code (categorical int), gender (M/F), occupation_code (int 0-20).
+    Returns (feature_df, scaler, encoders) prepared for later use.
     """
     if users is None:
         users = load_users()

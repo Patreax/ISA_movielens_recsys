@@ -84,7 +84,7 @@ def load_ratings(path: Path | None = None) -> pd.DataFrame:
 def load_users(path: Path | None = None) -> pd.DataFrame:
     """Load user demographics from users.dat (UserID::Gender::Age::Occupation::Zip-code).
 
-    Age is a categorical code mapped to a label. Occupation is a numeric code mapped to a label.
+    Age is a categorical code mapped to a label. Occupation is also a numeric code mapped to a label.
     """
     if path is None:
         path = ML_1M_DIR / "users.dat"

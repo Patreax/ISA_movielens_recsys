@@ -64,6 +64,7 @@ OCCUPATION_MAP = {
     20: "writer",
 }
 
+SURPRISE_READER_NAME = "ml-1m"
 
 def load_ratings(path: Path | None = None) -> pd.DataFrame:
     """Load ratings from ratings.dat (UserID::MovieID::Rating::Timestamp)."""
@@ -137,9 +138,9 @@ def load_merged(
     return merged
 
 
-def ratings_to_surprise(ratings: pd.DataFrame, rating_scale: tuple = (1, 5)) -> SurpriseDataset:
+def ratings_to_surprise(ratings: pd.DataFrame) -> SurpriseDataset:
     """Convert a ratings DataFrame to a Surprise Dataset."""
-    reader = Reader(rating_scale=rating_scale)
+    reader = Reader(name=SURPRISE_READER_NAME)
     data = SurpriseDataset.load_from_df(
         ratings[["user_id", "item_id", "rating"]].astype({"user_id": str, "item_id": str}),
         reader,

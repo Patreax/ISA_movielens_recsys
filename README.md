@@ -1,61 +1,38 @@
-# ISA_project1_movielens_recsys
+# ISA Project 1 — MovieLens Recommender System
 
-<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
-    <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
-</a>
+A recommender system built on the MovieLens 1M dataset for the ISA course.
 
-This is a first project for the ISA course focused on recsys implementation with movielens dataset.
+## Getting started
 
-## Project Organization
-
-```
-├── LICENSE            <- Open-source license if one is chosen
-├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
-├── README.md          <- The top-level README for developers using this project.
-├── data
-│   ├── external       <- Data from third party sources.
-│   ├── interim        <- Intermediate data that has been transformed.
-│   ├── processed      <- The final, canonical data sets for modeling.
-│   └── raw            <- The original, immutable data dump.
-│
-├── docs               <- A default mkdocs project; see www.mkdocs.org for details
-│
-├── models             <- Trained and serialized models, model predictions, or model summaries
-│
-├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-│                         the creator's initials, and a short `-` delimited description, e.g.
-│                         `1.0-jqp-initial-data-exploration`.
-│
-├── pyproject.toml     <- Project configuration file with package metadata for 
-│                         project1 and configuration for tools like black
-│
-├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-│
-├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-│   └── figures        <- Generated graphics and figures to be used in reporting
-│
-├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-│                         generated with `pip freeze > requirements.txt`
-│
-├── setup.cfg          <- Configuration file for flake8
-│
-└── project1   <- Source code for use in this project.
-    │
-    ├── __init__.py             <- Makes project1 a Python module
-    │
-    ├── config.py               <- Store useful variables and configuration
-    │
-    ├── dataset.py              <- Scripts to download or generate data
-    │
-    ├── features.py             <- Code to create features for modeling
-    │
-    ├── modeling                
-    │   ├── __init__.py 
-    │   ├── predict.py          <- Code to run model inference with trained models          
-    │   └── train.py            <- Code to train models
-    │
-    └── plots.py                <- Code to create visualizations
+**Option 1 — uv (recommended)**
+```bash
+uv sync
 ```
 
---------
+**Option 2 — pip**
+```bash
+pip install -r requirements.txt
+```
 
+## Dataset
+
+The MovieLens 1M dataset is already included locally at `data/raw/ml-1m/` — no download needed.
+
+## Usage
+
+Everything important (EDA, model training, evaluation, results) is in the notebook:
+
+```
+notebooks/01_movielens_recsys.ipynb
+```
+
+Open it with Jupyter and run all cells from top to bottom.
+
+## Project structure
+
+```
+├── data/raw/ml-1m/     <- MovieLens 1M dataset (included)
+├── notebooks/          <- Main notebook with all the work
+├── project1/           <- Source code (dataset loading, features, training, prediction)
+└── models/             <- Saved trained models
+```

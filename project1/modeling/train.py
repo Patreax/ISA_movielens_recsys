@@ -106,28 +106,27 @@ def bayesian_optimize_svd(
     metric: str = "rmse",
     random_state: int = 42,
 ) -> tuple[pd.DataFrame, dict]:
-    """Bayesian hyperparameter optimisation for SVD using Optuna (TPE sampler).
+    """Find the best SVD hyperparameters by trying different configs with Optuna.
 
-    Each trial suggests a new configuration from the surrogate model, trains SVD
-    using ``cv``-fold cross-validation on ``data``, and records the mean score.
-    After ``n_trials`` the study returns the configuration that minimised ``metric``.
+    We test a bunch of different parameter combinations. Each one gets trained
+    with k-fold cross-validation to get a stable score. Optuna's TPE sampler
+    learns from previous trials to suggest better configs each time. Returns
+    the best parameters it found.
 
-    Using K-fold CV instead of a single validation split reduces sensitivity to
-    any particular split and produces a more stable estimate of generalisation.
+    Why k-fold CV? It's more reliable than a single split — less luck involved.
 
     Parameters
     ----------
-    data         : Surprise Dataset built from the training DataFrame (never include
-                   the final test set here).
-    n_trials     : Number of Optuna trials (function evaluations).
-    cv           : Number of cross-validation folds used inside each trial.
-    metric       : Optimisation target — ``"rmse"`` or ``"mae"``.
-    random_state : Seed passed to the TPE sampler and KFold splitter for reproducibility.
+    data         : Surprise Dataset from training data (don't include test set).
+    n_trials     : How many parameter combos to try.
+    cv           : Number of folds for cross-validation.
+    metric       : What to minimize — "rmse" or "mae".
+    random_state : Seed for reproducibility.
 
     Returns
     -------
-    results_df  : DataFrame with one row per trial (params + mean CV score), sorted by metric.
-    best_params : Dict with the winning hyperparameter configuration.
+    results_df  : DataFrame with all trials, sorted by metric (best first).
+    best_params : Dict with the best hyperparameters found.
     """
     if metric not in ("rmse", "mae"):
         raise ValueError(f"metric must be 'rmse' or 'mae', got '{metric}'")

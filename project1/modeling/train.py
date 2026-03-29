@@ -106,28 +106,7 @@ def bayesian_optimize_svd(
     metric: str = "rmse",
     random_state: int = 42,
 ) -> tuple[pd.DataFrame, dict]:
-    """Find the best SVD hyperparameters by trying different configs with Optuna.
-
-    We test a bunch of different parameter combinations. Each one gets trained
-    with k-fold cross-validation to get a stable score. Optuna's TPE sampler
-    learns from previous trials to suggest better configs each time. Returns
-    the best parameters it found.
-
-    Why k-fold CV? It's more reliable than a single split — less luck involved.
-
-    Parameters
-    ----------
-    data         : Surprise Dataset from training data (don't include test set).
-    n_trials     : How many parameter combos to try.
-    cv           : Number of folds for cross-validation.
-    metric       : What to minimize — "rmse" or "mae".
-    random_state : Seed for reproducibility.
-
-    Returns
-    -------
-    results_df  : DataFrame with all trials, sorted by metric (best first).
-    best_params : Dict with the best hyperparameters found.
-    """
+    """Find the best SVD hyperparameters by trying different configs with Optuna"""
     if metric not in ("rmse", "mae"):
         raise ValueError(f"metric must be 'rmse' or 'mae', got '{metric}'")
 

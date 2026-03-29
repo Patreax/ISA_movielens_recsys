@@ -16,7 +16,8 @@ pip install -r requirements.txt
 
 ## Dataset
 
-The MovieLens 1M dataset is already included locally at `data/raw/ml-1m/` — no download needed.
+The MovieLens 1M dataset must be downloaded separately before running the notebook.
+Download it from [https://grouplens.org/datasets/movielens/](https://grouplens.org/datasets/movielens/) and extract it to `data/raw/ml-1m/`.
 
 ## Usage
 
@@ -31,7 +32,7 @@ Open it with Jupyter and run all cells from top to bottom.
 ## Project structure
 
 ```
-├── data/raw/ml-1m/     <- MovieLens 1M dataset (included)
+├── data/raw/ml-1m/     <- MovieLens 1M dataset (download required)
 ├── notebooks/          <- Main notebook with all the work
 ├── project1/           <- Source code (dataset loading, features, training, prediction)
 └── models/             <- Saved trained models

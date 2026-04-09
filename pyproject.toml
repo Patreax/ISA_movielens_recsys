@@ -1,20 +1,15 @@
 [build-system]
-requires = ["flit_core >=3.2,<4"]
-build-backend = "flit_core.buildapi"
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
 
 [project]
-name = "project1"
+name = "isa-recsys"
 version = "0.0.1"
-description = "This is a first project for the ISA course focused on recsys implementation with movielens dataset."
+description = "ISA course recsys projects."
 authors = [
   { name = "Patreax" },
 ]
-
 readme = "README.md"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    
-]
 requires-python = ">=3.10"
 dependencies = [
     "ipykernel>=7.2.0",
@@ -33,16 +28,18 @@ dependencies = [
     "joblib",
 ]
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["project1*", "project2*"]
 
 [tool.ruff]
 line-length = 99
-src = ["project1"]
-include = ["pyproject.toml", "project1/**/*.py"]
+src = ["project1", "project2"]
+include = ["pyproject.toml", "project1/**/*.py", "project2/**/*.py"]
 
 [tool.ruff.lint]
 extend-select = ["I"]  # Add import sorting
 
 [tool.ruff.lint.isort]
-known-first-party = ["project1"]
+known-first-party = ["project1", "project2"]
 force-sort-within-sections = true
-

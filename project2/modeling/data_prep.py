@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import html
 
 import numpy as np
 import pandas as pd
@@ -42,6 +43,7 @@ def build_interaction_table(
     df_games: pd.DataFrame,
     min_user_reviews: int = 5,
     min_item_reviews: int = 10,
+    content_cols: tuple[str, ...] = ("genres", "tags", "specs"),
 ) -> tuple[pd.DataFrame, dict, dict, dict, np.ndarray, list[str]]:
     """
     Build a filtered interaction table from user reviews (positive only).
@@ -51,8 +53,11 @@ def build_interaction_table(
         user_to_idx   — str user_id → 0-based int
         item_to_idx   — str item_id → 0-based int
         idx_to_item   — int → str item_id
-        genre_matrix  — np.ndarray (n_items, n_genres), multi-hot float32
-        genre_names   — list of genre name strings (columns of genre_matrix)
+        genre_matrix  — np.ndarray (n_items, n_tokens), multi-hot float32 over the
+                        union of tokens from `content_cols` (default: genres + tags).
+                        Keeps the `genre_` name for backward compatibility with
+                        downstream model / training code.
+        genre_names   — list of token name strings (columns of genre_matrix)
     """
     df = df_reviews[["user_id", "item_id", "recommend", "posted_date"]].copy()
     df = df.dropna(subset=["user_id", "item_id"])
@@ -81,34 +86,54 @@ def build_interaction_table(
     df["item_idx"] = df["item_id"].map(item_to_idx)
 
     n_items = len(unique_items)
-    genre_matrix, genre_names = _build_genre_matrix(df_games, item_to_idx, n_items)
+    genre_matrix, genre_names = _build_content_matrix(
+        df_games, item_to_idx, n_items, content_cols
+    )
 
     return df, user_to_idx, item_to_idx, idx_to_item, genre_matrix, genre_names
 
 
-def _build_genre_matrix(
+def _build_content_matrix(
     df_games: pd.DataFrame,
     item_to_idx: dict,
     n_items: int,
+    content_cols: tuple[str, ...],
 ) -> tuple[np.ndarray, list[str]]:
-    """Build a multi-hot genre matrix of shape (n_items, n_genres)."""
-    genres_parsed = parse_list_col(df_games["genres"])
-    all_genres = sorted({g for gl in genres_parsed for g in gl})
-    genre_to_col = {g: i for i, g in enumerate(all_genres)}
-    n_genres = len(all_genres)
+    """Build a multi-hot content matrix of shape (n_items, n_tokens).
 
-    matrix = np.zeros((n_items, n_genres), dtype=np.float32)
+    For each game we take the union of tokens across `content_cols`
+    (e.g. genres + tags), deduplicated per game. `genres` is sparsely missing
+    (~30% NaN in the catalogue); `tags` is much denser and overlaps heavily,
+    so the union both fills the genre gaps and enriches the description.
+    """
+    parsed_cols = {col: parse_list_col(df_games[col]) for col in content_cols}
 
-    id_to_genres: dict[str, list[str]] = {}
-    for item_id, genres in zip(df_games["id"].astype(str), genres_parsed):
-        id_to_genres[item_id] = genres
+    id_to_tokens: dict[str, list[str]] = {}
+    for idx, item_id in enumerate(df_games["id"].astype(str)):
+        merged: list[str] = []
+        seen: set[str] = set()
+        for col in content_cols:
+            for raw_tok in parsed_cols[col].iloc[idx]:
+                # Normalise HTML entities ("Animation &amp; Modeling" in genres
+                # collides with "Animation & Modeling" in tags otherwise).
+                tok = html.unescape(raw_tok).strip() if isinstance(raw_tok, str) else ""
+                if tok and tok not in seen:
+                    seen.add(tok)
+                    merged.append(tok)
+        id_to_tokens[item_id] = merged
 
+    all_tokens = sorted({tok for toks in id_to_tokens.values() for tok in toks})
+    token_to_col = {tok: i for i, tok in enumerate(all_tokens)}
+    n_tokens = len(all_tokens)
+
+    matrix = np.zeros((n_items, n_tokens), dtype=np.float32)
     for item_id, item_idx in item_to_idx.items():
-        for g in id_to_genres.get(str(item_id), []):
-            if g in genre_to_col:
-                matrix[item_idx, genre_to_col[g]] = 1.0
+        for tok in id_to_tokens.get(str(item_id), []):
+            col = token_to_col.get(tok)
+            if col is not None:
+                matrix[item_idx, col] = 1.0
 
-    return matrix, all_genres
+    return matrix, all_tokens
 
 
 # ── Train / val / test split (leave-one-out by time) ────────────────────────

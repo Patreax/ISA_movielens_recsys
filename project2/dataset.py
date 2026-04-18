@@ -295,7 +295,8 @@ def load_steam_reviews(
 def load_all_datasets(
     data_dir: Path | None = None,
     max_rows: int | None = None,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+# ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Load all five Steam datasets and return them as a tuple.
 
     Returns:
@@ -305,11 +306,12 @@ def load_all_datasets(
     df_reviews   = load_user_reviews(data_dir, max_rows=max_rows)
     df_items     = load_user_items(data_dir, max_rows=max_rows)
     df_games     = load_games(data_dir, max_rows=max_rows)
-    df_bundles   = load_bundles(data_dir, max_rows=max_rows)
-    df_steam_rev = load_steam_reviews(data_dir, max_rows=max_rows)
+    # df_bundles   = load_bundles(data_dir, max_rows=max_rows)
+    # df_steam_rev = load_steam_reviews(data_dir, max_rows=max_rows)
     df_games["price_numeric"] = parse_price(df_games["price"])
     logger.info("All datasets loaded.")
-    return df_reviews, df_items, df_games, df_bundles, df_steam_rev
+    # return df_reviews, df_items, df_games, df_bundles, df_steam_rev
+    return df_reviews, df_items, df_games
 
 
 def parse_price(series: pd.Series) -> pd.Series:

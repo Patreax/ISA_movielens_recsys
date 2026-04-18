@@ -10,14 +10,14 @@ authors = [
   { name = "Patreax" },
 ]
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "ipykernel>=7.2.0",
     "loguru",
     "python-dotenv",
     "tqdm",
     "typer",
-    "pandas",
+    "pandas>=3.0.2",
     "numpy<2",
     "scikit-surprise",
     "scikit-learn",
@@ -26,6 +26,10 @@ dependencies = [
     "seaborn",
     "jupyter",
     "joblib",
+    "ijson",
+    "orjson",
+    "pyarrow",
+    "torch",
 ]
 
 [tool.setuptools.packages.find]

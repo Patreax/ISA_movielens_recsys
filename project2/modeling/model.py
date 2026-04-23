@@ -105,6 +105,7 @@ class NeuMF(nn.Module):
         n_genres: int = 0,
         genre_proj_dim: int = 32,
         hidden_dims: tuple[int, ...] = (128, 64, 32),
+        dropout: float = 0.0,
     ):
         super().__init__()
 
@@ -125,7 +126,7 @@ class NeuMF(nn.Module):
 
         mlp_layers: list[nn.Module] = []
         for h in hidden_dims:
-            mlp_layers += [nn.Linear(mlp_in, h), nn.ReLU()]
+            mlp_layers += [nn.Linear(mlp_in, h), nn.ReLU(), nn.Dropout(p=dropout)]
             mlp_in = h
         self.mlp = nn.Sequential(*mlp_layers)
 

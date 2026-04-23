@@ -45,6 +45,7 @@ def train_model(
     n_neg: int = 4,
     n_epochs: int = 20,
     lr: float = 1e-3,
+    weight_decay: float = 1e-4,
     batch_size: int = 512,
     patience: int = 4,
     device: torch.device | None = None,
@@ -64,7 +65,10 @@ def train_model(
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode="max", patience=2, factor=0.5, min_lr=1e-5
+    )
 
     # Pre-build the observed set for fast negative sampling
     observed = set(zip(df_train["user_idx"].tolist(), df_train["item_idx"].tolist()))
@@ -88,15 +92,17 @@ def train_model(
         metrics = evaluate_loo(model, df_train, df_val, genre_matrix, n_items,
                                 device=device, k=k)
         ndcg = metrics[f"NDCG@{k}"]
+        scheduler.step(ndcg)
 
         elapsed = time.time() - t0
-        row = {"epoch": epoch, "loss": loss, "time_s": round(elapsed, 1), **metrics}
+        current_lr = optimizer.param_groups[0]["lr"]
+        row = {"epoch": epoch, "loss": loss, "lr": current_lr, "time_s": round(elapsed, 1), **metrics}
         history.append(row)
 
         if verbose:
             print(f"Epoch {epoch:02d} | loss={loss:.4f} | "
                   + " | ".join(f"{m}={v:.4f}" for m, v in metrics.items())
-                  + f" | {elapsed:.1f}s")
+                  + f" | lr={current_lr:.2e} | {elapsed:.1f}s")
 
         if ndcg > best_ndcg:
             best_ndcg  = ndcg

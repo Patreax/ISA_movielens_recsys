@@ -145,3 +145,76 @@ def evaluate_all_k(
             results[f"Precision@{k}"].append(hit / k)
 
     return {key: float(np.mean(vals)) for key, vals in results.items()}
+
+
+@torch.no_grad()
+def evaluate_sampled_loo(
+    model: nn.Module,
+    df_train: pd.DataFrame,
+    df_eval: pd.DataFrame,
+    genre_matrix: np.ndarray,
+    n_items: int,
+    device: torch.device,
+    k_values: tuple[int, ...] = (5, 10, 20),
+    n_neg_samples: int = 99,
+    seed: int = 42,
+) -> dict[str, float]:
+    """Sampled-negative leave-one-out evaluation (He et al. 2017 protocol).
+
+    For each test user we score the held-out positive against `n_neg_samples`
+    random negatives (drawn from items the user hasn't seen in training). With
+    a 100-item candidate set the metrics are far less dominated by popularity
+    than full-ranking over all items, so personalisation differences between
+    architectures become visible. Compared head-to-head with `evaluate_all_k`,
+    the gap between popularity-style and personalised models widens.
+    """
+    model.eval()
+    rng = np.random.default_rng(seed)
+    genre_t = torch.tensor(genre_matrix, dtype=torch.float32, device=device)
+
+    train_hist: dict[int, set[int]] = {}
+    for u, i in zip(df_train["user_idx"], df_train["item_idx"]):
+        train_hist.setdefault(int(u), set()).add(int(i))
+
+    results: dict[str, list[float]] = {
+        f"{m}@{k}": [] for k in k_values for m in ("Hit", "NDCG", "Precision")
+    }
+    all_items = np.arange(n_items)
+
+    for _, row in df_eval.iterrows():
+        u = int(row["user_idx"])
+        pos_item = int(row["item_idx"])
+
+        seen = train_hist.get(u, set()) | {pos_item}
+        # Sample negatives from items the user hasn't interacted with.
+        # Oversample then filter — fast and avoids per-call rejection loops.
+        pool = rng.integers(0, n_items, size=n_neg_samples * 4)
+        negs: list[int] = []
+        for j in pool:
+            if int(j) not in seen:
+                negs.append(int(j))
+                if len(negs) >= n_neg_samples:
+                    break
+        # In the (very rare) case of a dense user, fall back to scanning.
+        while len(negs) < n_neg_samples:
+            j = int(rng.integers(0, n_items))
+            if j not in seen:
+                negs.append(j)
+                seen = seen | {j}
+
+        candidates = np.array([pos_item] + negs, dtype=np.int64)
+        u_tensor = torch.full((len(candidates),), u, dtype=torch.long, device=device)
+        i_tensor = torch.tensor(candidates, dtype=torch.long, device=device)
+        scores = model(u_tensor, i_tensor, genre_t[i_tensor]).cpu().numpy()
+
+        ranked = candidates[np.argsort(-scores)]
+        pos_rank = int(np.where(ranked == pos_item)[0][0]) + 1
+
+        for k in k_values:
+            hit  = int(pos_rank <= k)
+            ndcg = (1.0 / np.log2(pos_rank + 1)) if hit else 0.0
+            results[f"Hit@{k}"].append(hit)
+            results[f"NDCG@{k}"].append(ndcg)
+            results[f"Precision@{k}"].append(hit / k)
+
+    return {key: float(np.mean(vals)) for key, vals in results.items()}

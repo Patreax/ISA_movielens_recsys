@@ -37,11 +37,15 @@ class GMFOnly(nn.Module):
         nn.init.normal_(self.user_emb.weight, std=0.01)
         nn.init.normal_(self.item_emb.weight, std=0.01)
 
-    def forward(self, user_ids: torch.Tensor, item_ids: torch.Tensor,
-                genres: torch.Tensor | None = None) -> torch.Tensor:
+    def score(self, user_ids: torch.Tensor, item_ids: torch.Tensor,
+              genres: torch.Tensor | None = None) -> torch.Tensor:
         u = self.user_emb(user_ids)
         v = self.item_emb(item_ids)
-        return torch.sigmoid(self.out(u * v)).squeeze(1)
+        return self.out(u * v).squeeze(1)
+
+    def forward(self, user_ids: torch.Tensor, item_ids: torch.Tensor,
+                genres: torch.Tensor | None = None) -> torch.Tensor:
+        return torch.sigmoid(self.score(user_ids, item_ids, genres))
 
 
 class MLPOnly(nn.Module):
@@ -76,13 +80,17 @@ class MLPOnly(nn.Module):
         nn.init.normal_(self.user_emb.weight, std=0.01)
         nn.init.normal_(self.item_emb.weight, std=0.01)
 
-    def forward(self, user_ids: torch.Tensor, item_ids: torch.Tensor,
-                genres: torch.Tensor | None = None) -> torch.Tensor:
+    def score(self, user_ids: torch.Tensor, item_ids: torch.Tensor,
+              genres: torch.Tensor | None = None) -> torch.Tensor:
         u, v = self.user_emb(user_ids), self.item_emb(item_ids)
         parts = [u, v]
         if self.use_genres and genres is not None:
             parts.append(torch.relu(self.genre_proj(genres)))
-        return torch.sigmoid(self.mlp(torch.cat(parts, dim=1))).squeeze(1)
+        return self.mlp(torch.cat(parts, dim=1)).squeeze(1)
+
+    def forward(self, user_ids: torch.Tensor, item_ids: torch.Tensor,
+                genres: torch.Tensor | None = None) -> torch.Tensor:
+        return torch.sigmoid(self.score(user_ids, item_ids, genres))
 
 
 class NeuMF(nn.Module):
@@ -137,8 +145,9 @@ class NeuMF(nn.Module):
                     self.mlp_user_emb, self.mlp_item_emb]:
             nn.init.normal_(emb.weight, std=0.01)
 
-    def forward(self, user_ids: torch.Tensor, item_ids: torch.Tensor,
-                genres: torch.Tensor | None = None) -> torch.Tensor:
+    def score(self, user_ids: torch.Tensor, item_ids: torch.Tensor,
+              genres: torch.Tensor | None = None) -> torch.Tensor:
+        """Pre-sigmoid score (logits). Used by BPR and BCEWithLogitsLoss."""
         # GMF
         gu = self.gmf_user_emb(user_ids)
         gi = self.gmf_item_emb(item_ids)
@@ -153,4 +162,8 @@ class NeuMF(nn.Module):
 
         # Fusion
         x = torch.cat([gmf_out, mlp_out], dim=1)
-        return torch.sigmoid(self.fusion(x)).squeeze(1)
+        return self.fusion(x).squeeze(1)
+
+    def forward(self, user_ids: torch.Tensor, item_ids: torch.Tensor,
+                genres: torch.Tensor | None = None) -> torch.Tensor:
+        return torch.sigmoid(self.score(user_ids, item_ids, genres))

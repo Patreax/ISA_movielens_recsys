@@ -1,14 +1,4 @@
-"""Training loop for NeuMF and its ablation variants.
-
-Supports two losses:
-  - "bce" (default) — point-wise binary cross-entropy with logits, optionally
-    weighted by a per-row confidence (Hu/Koren/Volinsky 2008).
-  - "bpr" — pairwise Bayesian Personalised Ranking (Rendle et al. 2009),
-    directly optimising the ranking the eval metric cares about.
-
-Negative samples can be drawn uniformly (default) or weighted by item
-popularity (``p_j ∝ count_j ** 0.75``).
-"""
+"""Training loop for NeuMF and its ablation variants."""
 
 from __future__ import annotations
 
@@ -123,21 +113,6 @@ def train_model(
 ) -> dict:
     """
     Train a model with early stopping on validation NDCG@k.
-
-    Negative samples are re-drawn each epoch to avoid overfitting.
-
-    Args:
-        loss: "bce" (point-wise) or "bpr" (pair-wise).
-        use_confidence: when True and `loss="bce"`, each row's BCE term is
-            multiplied by ``df_train["confidence"]``. Ignored for BPR.
-        pop_weighted_negatives: when True, negatives are sampled with
-            ``p_j ∝ count_j ** pop_alpha`` instead of uniformly.
-        pop_alpha: exponent of the popularity weighting (default 0.75).
-
-    Returns:
-        model    — best-checkpoint model loaded back in
-        history  — list of per-epoch dicts with loss and metrics
-        best_ndcg — best validation NDCG@k achieved
     """
     if loss not in ("bce", "bpr"):
         raise ValueError(f"Unknown loss '{loss}', expected 'bce' or 'bpr'")

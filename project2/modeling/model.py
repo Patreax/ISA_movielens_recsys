@@ -1,7 +1,6 @@
 """NeuMF model variants for the Steam recommendation system.
 
 Reference: He et al. (2017). Neural Collaborative Filtering. WWW 2017.
-https://arxiv.org/abs/1703.04730
 """
 
 from __future__ import annotations

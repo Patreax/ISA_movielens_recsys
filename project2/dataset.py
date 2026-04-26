@@ -297,10 +297,7 @@ def load_all_datasets(
     max_rows: int | None = None,
 # ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Load all five Steam datasets and return them as a tuple.
-
-    Returns:
-        (df_reviews, df_items, df_games, df_bundles, df_steam_rev)
+    """Load all five Steam datasets and return them as a tuple
     """
     data_dir = data_dir or STEAM_DATA_DIR
     df_reviews   = load_user_reviews(data_dir, max_rows=max_rows)

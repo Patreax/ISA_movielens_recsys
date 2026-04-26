@@ -159,15 +159,7 @@ def evaluate_sampled_loo(
     n_neg_samples: int = 99,
     seed: int = 42,
 ) -> dict[str, float]:
-    """Sampled-negative leave-one-out evaluation (He et al. 2017 protocol).
-
-    For each test user we score the held-out positive against `n_neg_samples`
-    random negatives (drawn from items the user hasn't seen in training). With
-    a 100-item candidate set the metrics are far less dominated by popularity
-    than full-ranking over all items, so personalisation differences between
-    architectures become visible. Compared head-to-head with `evaluate_all_k`,
-    the gap between popularity-style and personalised models widens.
-    """
+    """Sampled-negative leave-one-out evaluation (He et al. 2017 protocol)"""
     model.eval()
     rng = np.random.default_rng(seed)
     genre_t = torch.tensor(genre_matrix, dtype=torch.float32, device=device)

@@ -10,9 +10,6 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
-
-# ── List-column parsing (genres / tags stored as str in parquet) ─────────────
-
 def parse_list_col(series: pd.Series) -> pd.Series:
     """Convert genres/tags columns to actual Python lists.
 
@@ -36,8 +33,6 @@ def parse_list_col(series: pd.Series) -> pd.Series:
     return series.apply(_parse)
 
 
-# ── Filtering & encoding ─────────────────────────────────────────────────────
-
 def build_interaction_table(
     df_reviews: pd.DataFrame,
     df_games: pd.DataFrame,
@@ -50,32 +45,6 @@ def build_interaction_table(
 ) -> tuple[pd.DataFrame, dict, dict, dict, np.ndarray, list[str]]:
     """
     Build a filtered interaction table from user reviews.
-
-    Args:
-        include_negative_reviews:
-            If False (default), keeps only `recommend == True` reviews. If True,
-            both positive and negative reviews are kept; the `label` column is
-            1.0 / 0.0 accordingly. Filtering thresholds count both.
-        df_items:
-            Optional ownership table used to attach `playtime_forever` minutes
-            to each (user_id, item_id) pair. When provided, a `confidence`
-            column is added: ``1 + playtime_alpha * log1p(playtime_hours)`` for
-            positives, ``1.0`` for negatives or rows with no playtime record.
-        playtime_alpha:
-            Scale of the playtime confidence boost (Hu/Koren/Volinsky 2008).
-
-    Returns:
-        interactions  — DataFrame with columns
-                        [user_idx, item_idx, posted_date, label, confidence].
-                        `confidence` is always present (defaults to 1.0).
-        user_to_idx   — str user_id → 0-based int
-        item_to_idx   — str item_id → 0-based int
-        idx_to_item   — int → str item_id
-        genre_matrix  — np.ndarray (n_items, n_tokens), multi-hot float32 over the
-                        union of tokens from `content_cols` (default: genres + tags).
-                        Keeps the `genre_` name for backward compatibility with
-                        downstream model / training code.
-        genre_names   — list of token name strings (columns of genre_matrix)
     """
     df = df_reviews[["user_id", "item_id", "recommend", "posted_date"]].copy()
     df = df.dropna(subset=["user_id", "item_id"])
@@ -131,13 +100,7 @@ def _build_content_matrix(
     n_items: int,
     content_cols: tuple[str, ...],
 ) -> tuple[np.ndarray, list[str]]:
-    """Build a multi-hot content matrix of shape (n_items, n_tokens).
-
-    For each game we take the union of tokens across `content_cols`
-    (e.g. genres + tags), deduplicated per game. `genres` is sparsely missing
-    (~30% NaN in the catalogue); `tags` is much denser and overlaps heavily,
-    so the union both fills the genre gaps and enriches the description.
-    """
+    """Build a multi-hot content matrix of shape (n_items, n_tokens)"""
     parsed_cols = {col: parse_list_col(df_games[col]) for col in content_cols}
 
     id_to_tokens: dict[str, list[str]] = {}
@@ -168,22 +131,11 @@ def _build_content_matrix(
     return matrix, all_tokens
 
 
-# ── Train / val / test split (leave-one-out by time) ────────────────────────
-
 def leave_one_out_split(
     interactions: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Per-user temporal leave-one-out split.
-
-    If a `label` column is present the held-out val / test rows are restricted
-    to positives (label == 1) — predicting a held-out negative is not a
-    meaningful Hit@K target. All rows that are not held out (positives *and*
-    negatives) stay in train. Users without at least 3 positives are dropped.
-
-    Without a label column the original behaviour is preserved: last
-    interaction → test, second-to-last → val, rest → train; users with <3
-    interactions are dropped.
     """
     interactions = interactions.copy()
     interactions = interactions.sort_values(
@@ -220,8 +172,6 @@ def leave_one_out_split(
     return df_train, df_val, df_test
 
 
-# ── Negative sampling ────────────────────────────────────────────────────────
-
 def _build_neg_pool(
     rng: np.random.Generator,
     n_items: int,
@@ -249,20 +199,7 @@ def sample_negatives(
     item_popularity: np.ndarray | None = None,
     pop_alpha: float = 0.75,
 ) -> pd.DataFrame:
-    """Build a (user, item, label) training table with sampled negatives.
-
-    Behaviour:
-      - Each row in df_pos with label == 1 (or no label column) generates
-        `n_neg` sampled negatives.
-      - Real negatives in df_pos (label == 0) are passed through verbatim.
-      - If `item_popularity` is given, sampled negatives are drawn with
-        ``p_j ∝ item_popularity[j] ** pop_alpha`` (word2vec subsampling) — the
-        standard remedy for popularity bias under uniform sampling.
-      - The final table also carries a `confidence` column (1.0 for sampled
-        negatives; copied from df_pos for real positives/negatives if present).
-
-    Returned columns: [user_idx, item_idx, label, confidence].
-    """
+    """Build a (user, item, label) training table with sampled negatives."""
     rng = np.random.default_rng(seed)
 
     has_label = "label" in df_pos.columns
@@ -339,8 +276,6 @@ def sample_negatives(
     return combined.sample(frac=1, random_state=int(rng.integers(1_000_000))).reset_index(drop=True)
 
 
-# ── BPR triplet sampling ─────────────────────────────────────────────────────
-
 def sample_bpr_triplets(
     df_pos: pd.DataFrame,
     n_items: int,
@@ -349,12 +284,7 @@ def sample_bpr_triplets(
     item_popularity: np.ndarray | None = None,
     pop_alpha: float = 0.75,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Build (user, pos_item, neg_item) triplets for BPR training.
-
-    Only rows with label > 0 (or no label column) are used as positives.
-    Negatives are sampled uniformly or with popularity weights, avoiding any
-    (user, item) pair in `observed`.
-    """
+    """Build (user, pos_item, neg_item) triplets for BPR training"""
     rng = np.random.default_rng(seed)
 
     if "label" in df_pos.columns:
@@ -393,15 +323,8 @@ def sample_bpr_triplets(
     return users, pos_items, neg_items
 
 
-# ── PyTorch Dataset ──────────────────────────────────────────────────────────
-
 class InteractionDataset(Dataset):
-    """Yields (user_idx, item_idx, genre_vector, label, confidence) per sample.
-
-    `confidence` is always returned (defaults to 1.0 when df has no such
-    column). Training code can multiply it into the BCE loss to use playtime as
-    a Hu/Koren/Volinsky-style confidence weight.
-    """
+    """Yields (user_idx, item_idx, genre_vector, label, confidence) per sample"""
 
     def __init__(self, df: pd.DataFrame, genre_matrix: np.ndarray):
         self.users  = torch.tensor(df["user_idx"].values, dtype=torch.long)

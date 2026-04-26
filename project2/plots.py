@@ -6,9 +6,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-
-# ── Style ────────────────────────────────────────────────────────────────────
-
 def set_style():
     """Apply a consistent, clean style to all plots."""
     sns.set_theme(style="whitegrid", palette="muted", font_scale=1.1)
@@ -18,8 +15,6 @@ def set_style():
         "axes.spines.right": False,
     })
 
-
-# ── Recommendation signal ────────────────────────────────────────────────────
 
 def plot_recommend_distribution(df_reviews: pd.DataFrame, ax=None):
     """Pie + bar showing positive vs negative review split."""
@@ -51,8 +46,6 @@ def plot_recommend_distribution(df_reviews: pd.DataFrame, ax=None):
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"{int(x):,}"))
     return ax
 
-
-# ── User activity ────────────────────────────────────────────────────────────
 
 def plot_reviews_per_user(df_reviews: pd.DataFrame, ax=None):
     """Log-scale histogram of reviews per user."""
@@ -87,8 +80,6 @@ def plot_items_per_user(df_items: pd.DataFrame, ax=None):
     ax.legend()
     return ax
 
-
-# ── Item popularity ──────────────────────────────────────────────────────────
 
 def plot_reviews_per_item(df_reviews: pd.DataFrame, ax=None):
     """Log-scale histogram of review count per item."""
@@ -147,8 +138,6 @@ def plot_top_played_games(df_items: pd.DataFrame, df_games: pd.DataFrame,
     return ax
 
 
-# ── Playtime ─────────────────────────────────────────────────────────────────
-
 def plot_playtime_distribution(df_items: pd.DataFrame, ax=None):
     """Log-scale histogram of playtime_forever (minutes) for played items only."""
     if ax is None:
@@ -191,8 +180,6 @@ def plot_playtime_vs_recommend(df_reviews: pd.DataFrame, df_items: pd.DataFrame,
     ax.set_title("Playtime by Review Sentiment")
     return ax
 
-
-# ── Game metadata ────────────────────────────────────────────────────────────
 
 def plot_genre_distribution(df_games: pd.DataFrame, n: int = 20, ax=None):
     """Horizontal bar chart of the most frequent genres across all games."""
@@ -287,8 +274,6 @@ def plot_early_access_distribution(df_games: pd.DataFrame, ax=None):
     return ax
 
 
-# ── Interaction matrix ───────────────────────────────────────────────────────
-
 def plot_sparsity(n_users: int, n_items: int, n_interactions: int,
                   label: str = "Interaction Matrix", ax=None):
     """Horizontal stacked bar visualising matrix density vs sparsity."""
@@ -308,8 +293,6 @@ def plot_sparsity(n_users: int, n_items: int, n_interactions: int,
     ax.legend(loc="lower right")
     return ax
 
-
-# ── Steam reviews ────────────────────────────────────────────────────────────
 
 def plot_hours_distribution(df_steam_reviews: pd.DataFrame, ax=None):
     """Log-scale histogram of hours played at review time."""
